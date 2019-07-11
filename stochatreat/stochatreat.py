@@ -72,7 +72,6 @@ def stochatreat(data: pd.DataFrame,
     # =========================================================================
     # do checks
     # =========================================================================
-    full_data = data.copy()
     data = data.copy()
 
     # create treatment array and probability array
@@ -83,30 +82,30 @@ def stochatreat(data: pd.DataFrame,
         probs = np.array([frac] * len(ts))
     elif probs != [None]:
         probs = np.array(probs)
-        assertmsg = 'the probabilities must add up to 1'
+        assertmsg = "the probabilities must add up to 1"
         assert probs.sum() == 1, assertmsg
 
-    assertmsg = 'length of treatments and probs must be the same'
+    assertmsg = "length of treatments and probs must be the same"
     assert len(ts) == len(probs), assertmsg
 
     # check length of data
     if len(data) < 1:
-        raise ValueError('Make sure your data has enough observations.')
+        raise ValueError("Make sure your data has enough observations.")
 
     # if idx_col parameter was not defined.
     if idx_col is None:
         data = data.reset_index(drop=True)
-        idx_col = 'index'
+        idx_col = "index"
     elif type(idx_col) is not str:
-        raise TypeError('idx_col has to be a string.')
+        raise TypeError("idx_col has to be a string.")
 
     # if size is larger than sample universe
     if size is not None and size > len(data):
-        raise ValueError('Size argument is larger than the sample universe.')
+        raise ValueError("Size argument is larger than the sample universe.")
 
     # check for unique identifiers
     if data[idx_col].duplicated(keep=False).sum() > 0:
-        raise ValueError('Values in idx_col are not unique.')
+        raise ValueError("Values in idx_col are not unique.")
 
     # deal with multiple clusters
     if type(block_cols) is str:
@@ -144,8 +143,9 @@ def stochatreat(data: pd.DataFrame,
     data = data[[idx_col] + ['block']]
 
     # =========================================================================
-    # assign treatments
+    # sample and assign treatments
     # =========================================================================
+    
     slizes = []
     for i, cluster in enumerate(blocks):
         new_slize = []
