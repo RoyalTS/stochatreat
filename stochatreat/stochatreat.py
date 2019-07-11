@@ -72,6 +72,7 @@ def stochatreat(data: pd.DataFrame,
     # =========================================================================
     # do checks
     # =========================================================================
+    full_data = data.copy()
     data = data.copy()
 
     # create treatment array and probability array
@@ -158,6 +159,13 @@ def stochatreat(data: pd.DataFrame,
         n_belong = int(treat_blocks.sum())
         # get the number of misfits
         n_misfit = int(block_size - n_belong)
+
+        # to avoid bias towards the first treatment
+        rand_indices = list(range(treats))
+        np.random.shuffle(rand_indices)
+        treat_blocks = treat_blocks[rand_indices]
+        ts = np.array(ts)[rand_indices]
+
         # generate indexes to slice
         locs = treat_blocks.cumsum()
 
@@ -173,7 +181,7 @@ def stochatreat(data: pd.DataFrame,
             slize = slize.reset_index(drop=True)
             # assign treatment by index
             for i, treat in enumerate(ts):
-                if treat == 0:
+                if i == 0:
                     slize.loc[:locs[i], 'treat'] = treat
                 else:
                     slize.loc[locs[i - 1]:locs[i], 'treat'] = treat
@@ -197,7 +205,7 @@ def stochatreat(data: pd.DataFrame,
                 aux = aux.reset_index(drop=True)
                 # assign treatment by index
                 for i, treat in enumerate(ts):
-                    if treat == 0:
+                    if i == 0:
                         aux.loc[:locs[i], 'treat'] = treat
                     else:
                         aux.loc[locs[i - 1]:locs[i], 'treat'] = treat
