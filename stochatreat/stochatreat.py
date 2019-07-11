@@ -9,9 +9,10 @@ Created on Thu Nov  8 14:34:47 2018
             number of strata.
 ===============================================================================
 """
-import pandas as pd
-import numpy as np
 from typing import List
+
+import numpy as np
+import pandas as pd
 
 # %%===========================================================================
 # Main
@@ -145,6 +146,7 @@ def stochatreat(data: pd.DataFrame,
     # =========================================================================
     # assign treatments
     # =========================================================================
+    
     slizes = []
     for i, cluster in enumerate(blocks):
         new_slize = []
@@ -158,53 +160,59 @@ def stochatreat(data: pd.DataFrame,
         n_belong = int(treat_blocks.sum())
         # get the number of misfits
         n_misfit = int(block_size - n_belong)
+        # to avoid bias towards the first treatment
+        np.random.shuffle(ts)
+        treat_blocks = treat_blocks[ts]
+
         # generate indexes to slice
         locs = treat_blocks.cumsum()
 
-        # if there are no misfits
-        if n_misfit == 0:
+        # separate adherents from misfits
+        adherents = slize.iloc[:n_belong].copy()
+        misfits = slize.iloc[n_belong:].copy()
+
+        new_slize = []
+
+        # deal with adherents
+
+        if n_belong > 0:
             # assign random values
-            slize['rand'] = R.uniform(size=len(slize))
+            adherents['rand'] = R.uniform(size=n_belong)
             # sort by random
-            slize = slize.sort_values(by='rand')
+            adherents = adherents.sort_values(by='rand')
             # drop the rand column
-            slize = slize.drop(columns='rand')
+            adherents = adherents.drop(columns='rand')
             # reset index in order to keep original id
-            slize = slize.reset_index(drop=True)
+            adherents = adherents.reset_index(drop=True)
             # assign treatment by index
             for i, treat in enumerate(ts):
-                if treat == 0:
-                    slize.loc[:locs[i], 'treat'] = treat
+                if i == 0:
+                    adherents.loc[:locs[i], 'treat'] = treat
                 else:
-                    slize.loc[locs[i - 1]:locs[i], 'treat'] = treat
-            new_slize = slize.copy()
+                    adherents.loc[locs[i - 1]:locs[i], 'treat'] = treat
+            
+            new_slize.append(adherents)
 
         # if there are any misfits
-        elif n_misfit > 0:
-            # separate groups between adherents and misfits
-            adherents = slize.iloc[:n_belong].copy()
-            misfits = slize.iloc[n_belong:].copy()
+        if n_misfit > 0:
+            # assign random values
+            misfits['rand'] = R.uniform(size=n_misfit)
+            # sort by random
+            misfits = misfits.sort_values(by='rand')
+            # drop the rand column
+            misfits = misfits.drop(columns='rand')
+            # reset index in order to keep original id
+            misfits = misfits.reset_index(drop=True)
+            # assign probabilites to get the right proportion expectation
+            # making sure we shuffle the probs like the treat_blocks
+            misfit_probs = probs[ts] - treat_blocks / block_size
+            # probas should sum to 1
+            misfit_probs = misfit_probs / misfit_probs.sum()
+            misfits['treat'] = np.random.choice(ts, size=n_misfit, p=misfit_probs)
+            
+            new_slize.append(misfits)
 
-            # assign treatmens on each group
-            for aux in [adherents, misfits]:
-                # assign random values
-                aux['rand'] = R.uniform(size=len(aux))
-                # sort by random
-                aux = aux.sort_values(by='rand')
-                # drop the rand column
-                aux = aux.drop(columns='rand')
-                # reset index in order to keep original id
-                aux = aux.reset_index(drop=True)
-                # assign treatment by index
-                for i, treat in enumerate(ts):
-                    if treat == 0:
-                        aux.loc[:locs[i], 'treat'] = treat
-                    else:
-                        aux.loc[locs[i - 1]:locs[i], 'treat'] = treat
-                new_slize.append(aux)
-                del aux
-            new_slize = pd.concat(new_slize)
-
+        new_slize = pd.concat(new_slize)
         # append blocks together
         slizes.append(new_slize)
 
@@ -214,8 +222,8 @@ def stochatreat(data: pd.DataFrame,
     ids_treats = ids_treats.sort_values(by=idx_col)
     # map the concatenated blocks to block ids to retrieve the blocks
     # within which randomization was done easily
-    ids_treats["block_id"] = ids_treats.groupby(["block"]).ngroup()
-    ids_treats = ids_treats.drop(columns="block")
+    ids_treats['block_id'] = ids_treats.groupby(['block']).ngroup()
+    ids_treats = ids_treats.drop(columns='block')
     # reset index
     ids_treats = ids_treats.reset_index(drop=True)
     ids_treats['treat'] = ids_treats['treat'].astype(np.int64)

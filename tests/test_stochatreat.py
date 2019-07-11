@@ -184,6 +184,7 @@ standard_probs = [[0.1, 0.9], [1 / 3, 2 / 3], [0.5, 0.5], [2 / 3, 1 / 3], [0.9, 
 
 @pytest.fixture(params=[10000, 100000])
 def df(request):
+    np.random.seed(42)
     N = request.param
     df = pd.DataFrame(
         data={
@@ -257,7 +258,7 @@ def test_stochatreat_no_misfits(probs):
 @pytest.mark.parametrize("probs", standard_probs)
 def test_stochatreat_only_misfits(probs):
     """Test that overall treatment assignment proportions across all strata are as intended when strata are such that there are only misfits"""
-    N = 1_000
+    N = 200_000
     df = pd.DataFrame(
         data={
             "id": np.arange(N),
