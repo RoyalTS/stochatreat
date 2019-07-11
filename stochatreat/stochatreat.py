@@ -67,7 +67,6 @@ def stochatreat(data: pd.DataFrame,
                                  random_state=42)
         >>> data = data.merge(treats, how='left', on='myid')
     """
-    R = np.random.RandomState(random_state)
 
     # =========================================================================
     # do checks
