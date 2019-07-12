@@ -112,97 +112,108 @@ def test_stochatreat_only_misfits(probs):
 
     np.testing.assert_almost_equal(treatment_shares, np.array(probs), decimal=3)
 
-def test_stochatreat_input_format():
-    """Tests that the function refuses input in the wrong format"""
-    right_probs = [.1, .9]
-    wrong_probs = [.1, .2]
-    
-    right_treats = 2
-    wrong_treats = 3
 
-    right_data = pd.DataFrame(
+@pytest.fixture
+def correct_params():
+    params = {}
+    params["probs"] = [.1, .9]
+    params["treat"] = 2
+    params["data"] = pd.DataFrame(
         data={
             "id": np.arange(100),
             "block": np.arange(100),
         }
     )
-    wrong_data = pd.DataFrame(
+    params["idx_col"] = "id"
+    return params
+
+
+def test_stochatreat_input_format_probs(correct_params):
+    """Tests that the function rejects probabilities that don't add up to one"""
+    probs_not_sum_to_one = [.1, .2]
+    with pytest.raises(Exception):
+        stochatreat(
+            data=correct_params["data"],
+            block_cols=["block"],
+            treats=correct_params["treat"],
+            idx_col=correct_params["idx_col"],
+            probs=probs_not_sum_to_one,
+        )
+
+
+def test_stochatreat_input_format_treats(correct_params):
+    """Tests that the function raises an error for treatments and probs of different sizes"""
+    treat_too_large = 3
+    with pytest.raises(Exception):
+        stochatreat(
+            data=correct_params["data"],
+            block_cols=["block"],
+            treats=treat_too_large,
+            idx_col=correct_params["idx_col"],
+            probs=correct_params["probs"],
+        )
+
+
+def test_stochatreat_input_format_empty_data(correct_params):
+    """Tests that the function raises an error when an empty dataframe is passed"""
+    empty_data = pd.DataFrame()
+    with pytest.raises(ValueError):
+        stochatreat(
+            data=empty_data,
+            block_cols=["block"],
+            treats=correct_params["treat"],
+            idx_col=correct_params["idx_col"],
+            probs=correct_params["probs"],
+        )
+
+
+def test_stochatreat_input_format_idx_col_str(correct_params):
+    """Tests that the function rejects an idx_col parameter that is not a string or None"""
+    idx_col_not_str = 0
+    with pytest.raises(TypeError):
+        stochatreat(
+            data=correct_params["data"],
+            block_cols=["block"],
+            treats=correct_params["treat"],
+            idx_col=idx_col_not_str,
+            probs=correct_params["probs"],
+        )
+
+
+def test_stochatreat_input_format_size(correct_params):
+    """Tests that the function rejects a sampling size larger than the data count"""
+    size_bigger_than_sampling_universe_size = 101
+    with pytest.raises(ValueError):
+        stochatreat(
+            data=correct_params["data"],
+            block_cols=["block"],
+            treats=correct_params["treat"],
+            idx_col=correct_params["idx_col"],
+            probs=correct_params["probs"],
+            size=size_bigger_than_sampling_universe_size,
+        )
+
+
+def test_stochatreat_input_format_idx_col_unique(correct_params):    
+    """Tests that the function raises an error if the idx_col is not a primary key of the data""""
+    data_with_idx_col_with_duplicates = pd.DataFrame(
         data={
             "id": 1,
             "block": np.arange(100),
         }
     )
-    empty_data = pd.DataFrame()
-
-    idx_col = "id"
-    wrong_idx_col = 0
-
-    wrong_size = 101
-
-    with pytest.raises(Exception):
-        stochatreat(
-            data=right_data,
-            block_cols=["block"],
-            treats=right_treats,
-            idx_col=idx_col,
-            probs=wrong_probs,
-            random_state=42,
-        )
-    
-    with pytest.raises(Exception):
-        stochatreat(
-            data=right_data,
-            block_cols=["block"],
-            treats=wrong_treats,
-            idx_col=idx_col,
-            probs=right_probs,
-            random_state=42,
-        )
-    
     with pytest.raises(ValueError):
         stochatreat(
-            data=empty_data,
+            data=data_with_idx_col_with_duplicates,
             block_cols=["block"],
-            treats=right_treats,
-            idx_col=idx_col,
-            probs=right_probs,
-            random_state=42,
-        )
-    
-    with pytest.raises(TypeError):
-        stochatreat(
-            data=right_data,
-            block_cols=["block"],
-            treats=right_treats,
-            idx_col=wrong_idx_col,
-            probs=right_probs,
-            random_state=42,
-        )
-    
-    with pytest.raises(ValueError):
-        stochatreat(
-            data=right_data,
-            block_cols=["block"],
-            treats=right_treats,
-            idx_col=idx_col,
-            probs=right_probs,
-            size=wrong_size,
-            random_state=42,
-        )
-    
-    with pytest.raises(ValueError):
-        stochatreat(
-            data=wrong_data,
-            block_cols=["block"],
-            treats=right_treats,
-            idx_col=idx_col,
-            probs=right_probs,
-            random_state=42,
+            treats=correct_params["treat"],
+            idx_col=correct_params["idx_col"],
+            probs=correct_params["probs"],
         )
 
 
-def test_stochatreat_output_format():
-    """Tests that the function's output is in the right format'"""
+@pytest.fixture
+def get_treatments_to_check_output():
     treats = 2
     data = pd.DataFrame(
         data={
@@ -222,10 +233,41 @@ def test_stochatreat_output_format():
         random_state=42,
     )
 
+    return treatments
+
+
+def test_stochatreat_output_format_type(get_treatments_to_check_output):
+    """Tests that the function's output is a pd DataFrame"""
+    treatments = get_treatments_to_check_output
     assert isinstance(treatments, pd.DataFrame), "The output is not a DataFrame"
-    assert "treat" in treatments.columns, "Treatment column is missing"
-    assert "block_id" in treatments.columns, "Block_id column is missing"
-    assert idx_col in treatments.columns, "Index column is missing"
-    assert len(treatments) == size, "The size of the output does not match the sampled size"
-    assert treatments['treat'].isnull().sum() == 0, "There are null assignments"
     
+
+def test_stochatreat_output_format_treat_col(get_treatments_to_check_output):
+    """Tests that the function's output contains the `treat` column"""
+    treatments = get_treatments_to_check_output
+    assert "treat" in treatments.columns, "Treatment column is missing"
+    
+
+def test_stochatreat_output_format_block_id_col(get_treatments_to_check_output):
+    """Tests that the function's output contains the `block_id`'"""
+    treatments = get_treatments_to_check_output
+    assert "block_id" in treatments.columns, "Block_id column is missing"
+    
+
+def test_stochatreat_output_format_idx_col(get_treatments_to_check_output):
+    """Tests that the function's output contains the `idx_col`'"""
+    treatments = get_treatments_to_check_output
+    assert idx_col in treatments.columns, "Index column is missing"
+    
+
+def test_stochatreat_output_format_size(get_treatments_to_check_output):
+    """Tests that the function's output is of the right length'"""
+    treatments = get_treatments_to_check_output
+    assert len(treatments) == size, "The size of the output does not match the sampled size"
+    
+
+def test_stochatreat_output_format_nulls(get_treatments_to_check_output):
+    """Tests that the function's output treatments are all non null'"""
+    treatments = get_treatments_to_check_output
+    assert treatments['treat'].isnull().sum() == 0, "There are null assignments"
+     
