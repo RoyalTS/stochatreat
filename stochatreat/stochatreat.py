@@ -74,9 +74,6 @@ def stochatreat(data: pd.DataFrame,
     # =========================================================================
     data = data.copy()
 
-    # sort data
-    data = data.sort_values(by=idx_col)
-
     # create treatment array and probability array
     ts = list(range(treats))
     # if no probabilities stated
@@ -114,6 +111,9 @@ def stochatreat(data: pd.DataFrame,
     if type(block_cols) is str:
         block_cols = [block_cols]
 
+    # sort data
+    data = data.sort_values(by=idx_col)
+    
     # combine cluster cells
     data = data[[idx_col] + block_cols].copy()
     data['block'] = data[block_cols].astype(str).sum(axis=1)

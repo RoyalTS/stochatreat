@@ -156,7 +156,7 @@ def test_stochatreat_input_format_treats(correct_params):
 
 def test_stochatreat_input_format_empty_data(correct_params):
     """Tests that the function raises an error when an empty dataframe is passed"""
-    empty_data = pd.DataFrame()
+    empty_data = pd.DataFrame({})
     with pytest.raises(ValueError):
         stochatreat(
             data=empty_data,
@@ -195,7 +195,7 @@ def test_stochatreat_input_format_size(correct_params):
 
 
 def test_stochatreat_input_format_idx_col_unique(correct_params):    
-    """Tests that the function raises an error if the idx_col is not a primary key of the data""""
+    """Tests that the function raises an error if the idx_col is not a primary key of the data"""
     data_with_idx_col_with_duplicates = pd.DataFrame(
         data={
             "id": 1,
@@ -257,13 +257,13 @@ def test_stochatreat_output_format_block_id_col(get_treatments_to_check_output):
 def test_stochatreat_output_format_idx_col(get_treatments_to_check_output):
     """Tests that the function's output contains the `idx_col`'"""
     treatments = get_treatments_to_check_output
-    assert idx_col in treatments.columns, "Index column is missing"
+    assert "id" in treatments.columns, "Index column is missing"
     
 
 def test_stochatreat_output_format_size(get_treatments_to_check_output):
     """Tests that the function's output is of the right length'"""
     treatments = get_treatments_to_check_output
-    assert len(treatments) == size, "The size of the output does not match the sampled size"
+    assert len(treatments) == 90, "The size of the output does not match the sampled size"
     
 
 def test_stochatreat_output_format_nulls(get_treatments_to_check_output):
