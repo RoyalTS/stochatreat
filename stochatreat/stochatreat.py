@@ -114,9 +114,12 @@ def stochatreat(data: pd.DataFrame,
     if type(block_cols) is str:
         block_cols = [block_cols]
 
+<<<<<<< HEAD
     # sort data
     data = data.sort_values(by=idx_col)
 
+=======
+>>>>>>> round values instead of flooring them, put preparation for sampling procedure in its right place
     # combine cluster cells
     data = data[[idx_col] + block_cols].copy()
     data['block'] = data[block_cols].astype(str).sum(axis=1)
@@ -141,6 +144,11 @@ def stochatreat(data: pd.DataFrame,
         data = pd.concat(sample)
 
         assert sum(reduced_sizes) == len(data)
+
+    # get sampling weights
+    if size is not None:
+        fracs = data["block"].value_counts(normalize=True).sort_index()
+        reduced_sizes = (fracs * size).round().astype(int).tolist()
 
     # keep only ids and concatenated clusters
     data = data[[idx_col] + ['block']]
@@ -228,17 +236,32 @@ def stochatreat(data: pd.DataFrame,
                                 random_state=random_state)
         # we generate random assignments of fixed proportions
         n_cluster = len(slize)
-        cluster_treatments = np.repeat(ts, (n_cluster*probs).astype(int))
-        np.random.shuffle(cluster_treatments)
+        # we use np.round to get as close to the required proportions
+        # as possible
+        cluster_treatments = np.repeat(
+            ts, np.round(n_cluster*probs).astype(int)
+        )
 
-        # we randomly add treatments to fill the gaps
-        n_misfits = n_cluster - len(cluster_treatments)
+        # we randomly add/remove treatments to fill the gaps/remove the excess
+        n_cluster_treatments = len(cluster_treatments)
+        n_misfits = n_cluster - n_cluster_treatments
         if n_misfits > 0:
             cluster_treatments = np.r_[
                 cluster_treatments, 
                 np.random.choice(treats, size=n_misfits, p=probs)
             ]
+        # we remove uniformly randomly following the existing proportion
+        if n_misfits < 0:
+            random_misfit_idx = np.random.randint(
+                0, n_cluster_treatments, size=abs(n_misfits)
+            )
+            cluster_treatments = np.delete(cluster_treatments, random_misfit_idx)
+
+        # we shuffle for random assignments within strata
+        np.random.shuffle(cluster_treatments)
         
+        print(n_cluster)
+        print(len(cluster_treatments))
         slize["treat"] = cluster_treatments
 
         slizes.append(slize)
