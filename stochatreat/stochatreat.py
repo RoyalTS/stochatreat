@@ -114,12 +114,9 @@ def stochatreat(data: pd.DataFrame,
     if type(block_cols) is str:
         block_cols = [block_cols]
 
-<<<<<<< HEAD
     # sort data
     data = data.sort_values(by=idx_col)
 
-=======
->>>>>>> round values instead of flooring them, put preparation for sampling procedure in its right place
     # combine cluster cells
     data = data[[idx_col] + block_cols].copy()
     data['block'] = data[block_cols].astype(str).sum(axis=1)
@@ -145,11 +142,6 @@ def stochatreat(data: pd.DataFrame,
 
         assert sum(reduced_sizes) == len(data)
 
-    # get sampling weights
-    if size is not None:
-        fracs = data["block"].value_counts(normalize=True).sort_index()
-        reduced_sizes = (fracs * size).round().astype(int).tolist()
-
     # keep only ids and concatenated clusters
     data = data[[idx_col] + ['block']]
 
@@ -159,7 +151,6 @@ def stochatreat(data: pd.DataFrame,
     
     slizes = []
     for i, cluster in enumerate(blocks):
-<<<<<<< HEAD
         new_slize = []
         # slize data by cluster
         slize = data.loc[data['block'] == cluster].copy()
@@ -227,44 +218,6 @@ def stochatreat(data: pd.DataFrame,
 
         # append blocks together
         slizes.append(new_slize)
-=======
-        slize = data.loc[data["block"] == cluster].copy()
-        # if size not None we sample
-        if size is not None:
-            slize = slize.sample(n=reduced_sizes[i],
-                                replace=False,
-                                random_state=random_state)
-        # we generate random assignments of fixed proportions
-        n_cluster = len(slize)
-        # we use np.round to get as close to the required proportions
-        # as possible
-        cluster_treatments = np.repeat(
-            ts, np.round(n_cluster*probs).astype(int)
-        )
-
-        # we randomly add/remove treatments to fill the gaps/remove the excess
-        n_cluster_treatments = len(cluster_treatments)
-        n_misfits = n_cluster - n_cluster_treatments
-        if n_misfits > 0:
-            cluster_treatments = np.r_[
-                cluster_treatments, 
-                np.random.choice(treats, size=n_misfits, p=probs)
-            ]
-        # we remove uniformly randomly following the existing proportion
-        if n_misfits < 0:
-            random_misfit_idx = np.random.choice(
-                n_cluster_treatments, size=abs(n_misfits), replace=False
-            )
-            print(random_misfit_idx)
-            cluster_treatments = np.delete(cluster_treatments, random_misfit_idx)
-
-        # we shuffle for random assignments within strata
-        np.random.shuffle(cluster_treatments)
-
-        slize["treat"] = cluster_treatments
-
-        slizes.append(slize)
->>>>>>> used np.repeat, renamed extra, sampled misfits weighted by probs
 
     # concatenate all blocks together
     ids_treats = pd.concat(slizes, sort=False)
@@ -272,13 +225,8 @@ def stochatreat(data: pd.DataFrame,
     ids_treats = ids_treats.sort_values(by=idx_col)
     # map the concatenated blocks to block ids to retrieve the blocks
     # within which randomization was done easily
-<<<<<<< HEAD
     ids_treats["block_id"] = ids_treats.groupby(["block"]).ngroup()
     ids_treats = ids_treats.drop(columns="block")
-=======
-    ids_treats["block"] = ids_treats.groupby(["block"]).ngroup()
-    ids_treats = ids_treats.rename({"block": "block_id"}, axis="columns")
->>>>>>> used np.repeat, renamed extra, sampled misfits weighted by probs
     # reset index
     ids_treats = ids_treats.reset_index(drop=True)
     ids_treats["treat"] = ids_treats["treat"].astype(np.int64)
