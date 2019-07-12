@@ -228,3 +228,4 @@ def test_stochatreat_output_format():
     assert idx_col in treatments.columns, "Index column is missing"
     assert len(treatments) == size, "The size of the output does not match the sampled size"
     assert treatments['treat'].isnull().sum() == 0, "There are null assignments"
+    
