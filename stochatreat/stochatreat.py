@@ -9,9 +9,13 @@ Created on Thu Nov  8 14:34:47 2018
             number of strata.
 ===============================================================================
 """
-import pandas as pd
-import numpy as np
 from typing import List
+
+from functools import reduce
+from operator import iconcat
+
+import numpy as np
+import pandas as pd
 
 # %%===========================================================================
 # Main
