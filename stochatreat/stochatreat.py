@@ -252,16 +252,15 @@ def stochatreat(data: pd.DataFrame,
             ]
         # we remove uniformly randomly following the existing proportion
         if n_misfits < 0:
-            random_misfit_idx = np.random.randint(
-                0, n_cluster_treatments, size=abs(n_misfits)
+            random_misfit_idx = np.random.choice(
+                n_cluster_treatments, size=abs(n_misfits), replace=False
             )
+            print(random_misfit_idx)
             cluster_treatments = np.delete(cluster_treatments, random_misfit_idx)
 
         # we shuffle for random assignments within strata
         np.random.shuffle(cluster_treatments)
-        
-        print(n_cluster)
-        print(len(cluster_treatments))
+
         slize["treat"] = cluster_treatments
 
         slizes.append(slize)
