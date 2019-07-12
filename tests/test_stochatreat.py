@@ -111,3 +111,120 @@ def test_stochatreat_only_misfits(probs):
     treatment_shares = treats.groupby(["treat"])["id"].count() / treats.shape[0]
 
     np.testing.assert_almost_equal(treatment_shares, np.array(probs), decimal=3)
+
+def test_stochatreat_input_format():
+    """Tests that the function refuses input in the wrong format"""
+    right_probs = [.1, .9]
+    wrong_probs = [.1, .2]
+    
+    right_treats = 2
+    wrong_treats = 3
+
+    right_data = pd.DataFrame(
+        data={
+            "id": np.arange(100),
+            "block": np.arange(100),
+        }
+    )
+    wrong_data = pd.DataFrame(
+        data={
+            "id": 1,
+            "block": np.arange(100),
+        }
+    )
+    empty_data = pd.DataFrame()
+
+    idx_col = "id"
+    wrong_idx_col = 0
+
+    wrong_size = 101
+
+    with pytest.raises(Exception):
+        stochatreat(
+            data=right_data,
+            block_cols=["block"],
+            treats=right_treats,
+            idx_col=idx_col,
+            probs=wrong_probs,
+            random_state=42,
+        )
+    
+    with pytest.raises(Exception):
+        stochatreat(
+            data=right_data,
+            block_cols=["block"],
+            treats=wrong_treats,
+            idx_col=idx_col,
+            probs=right_probs,
+            random_state=42,
+        )
+    
+    with pytest.raises(ValueError):
+        stochatreat(
+            data=empty_data,
+            block_cols=["block"],
+            treats=right_treats,
+            idx_col=idx_col,
+            probs=right_probs,
+            random_state=42,
+        )
+    
+    with pytest.raises(TypeError):
+        stochatreat(
+            data=right_data,
+            block_cols=["block"],
+            treats=right_treats,
+            idx_col=wrong_idx_col,
+            probs=right_probs,
+            random_state=42,
+        )
+    
+    with pytest.raises(ValueError):
+        stochatreat(
+            data=right_data,
+            block_cols=["block"],
+            treats=right_treats,
+            idx_col=idx_col,
+            probs=right_probs,
+            size=wrong_size,
+            random_state=42,
+        )
+    
+    with pytest.raises(ValueError):
+        stochatreat(
+            data=wrong_data,
+            block_cols=["block"],
+            treats=right_treats,
+            idx_col=idx_col,
+            probs=right_probs,
+            random_state=42,
+        )
+
+
+def test_stochatreat_output_format():
+    """Tests that the function's output is in the right format'"""
+    treats = 2
+    data = pd.DataFrame(
+        data={
+            "id": np.arange(100),
+            "block": np.arange(100),
+        }
+    )
+    idx_col = "id"
+    size = 90
+
+    treatments = stochatreat(
+        data=data,
+        block_cols=["block"],
+        treats=treats,
+        idx_col=idx_col,
+        size=size,
+        random_state=42,
+    )
+
+    assert isinstance(treatments, pd.DataFrame), "The output is not a DataFrame"
+    assert "treat" in treatments.columns, "Treatment column is missing"
+    assert "block_id" in treatments.columns, "Block_id column is missing"
+    assert idx_col in treatments.columns, "Index column is missing"
+    assert len(treatments) == size, "The size of the output does not match the sampled size"
+    assert treatments['treat'].isnull().sum() == 0, "There are null assignments"
