@@ -151,6 +151,7 @@ def stochatreat(data: pd.DataFrame,
     
     slizes = []
     for i, cluster in enumerate(blocks):
+<<<<<<< HEAD
         new_slize = []
         # slize data by cluster
         slize = data.loc[data['block'] == cluster].copy()
@@ -218,6 +219,30 @@ def stochatreat(data: pd.DataFrame,
 
         # append blocks together
         slizes.append(new_slize)
+=======
+        slize = data.loc[data["block"] == cluster].copy()
+        # if size not None we sample
+        if size is not None:
+            slize = slize.sample(n=reduced_sizes[i],
+                                replace=False,
+                                random_state=random_state)
+        # we generate random assignments of fixed proportions
+        n_cluster = len(slize)
+        cluster_treatments = np.repeat(ts, (n_cluster*probs).astype(int))
+        np.random.shuffle(cluster_treatments)
+
+        # we randomly add treatments to fill the gaps
+        n_misfits = n_cluster - len(cluster_treatments)
+        if n_misfits > 0:
+            cluster_treatments = np.r_[
+                cluster_treatments, 
+                np.random.choice(treats, size=n_misfits, p=probs)
+            ]
+        
+        slize["treat"] = cluster_treatments
+
+        slizes.append(slize)
+>>>>>>> used np.repeat, renamed extra, sampled misfits weighted by probs
 
     # concatenate all blocks together
     ids_treats = pd.concat(slizes, sort=False)
@@ -225,8 +250,13 @@ def stochatreat(data: pd.DataFrame,
     ids_treats = ids_treats.sort_values(by=idx_col)
     # map the concatenated blocks to block ids to retrieve the blocks
     # within which randomization was done easily
+<<<<<<< HEAD
     ids_treats["block_id"] = ids_treats.groupby(["block"]).ngroup()
     ids_treats = ids_treats.drop(columns="block")
+=======
+    ids_treats["block"] = ids_treats.groupby(["block"]).ngroup()
+    ids_treats = ids_treats.rename({"block": "block_id"}, axis="columns")
+>>>>>>> used np.repeat, renamed extra, sampled misfits weighted by probs
     # reset index
     ids_treats = ids_treats.reset_index(drop=True)
     ids_treats["treat"] = ids_treats["treat"].astype(np.int64)
