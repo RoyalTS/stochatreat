@@ -225,8 +225,8 @@ def stochatreat(data: pd.DataFrame,
     ids_treats = ids_treats.drop(columns="block")
     # reset index
     ids_treats = ids_treats.reset_index(drop=True)
-    ids_treats['treat'] = ids_treats['treat'].astype(np.int64)
+    ids_treats["treat"] = ids_treats["treat"].astype(np.int64)
 
     assert len(ids_treats) == len(data)
-    assert ids_treats['treat'].isnull().sum() == 0
+    assert ids_treats["treat"].isnull().sum() == 0
     return ids_treats
