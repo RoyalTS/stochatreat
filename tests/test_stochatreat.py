@@ -152,11 +152,29 @@ def test_stochatreat_output_block_id_col(treatments_dict):
     assert "block_id" in treatments_df.columns, "Block_id column is missing"
 
 
+<<<<<<< HEAD
 def test_stochatreat_output_block_id_col_dtype(treatments_dict):
     """Tests that the function's output's 'block_id` column is an int column'"""
     treatments_df = treatments_dict["treatments"]
     assert treatments_df["block_id"].dtype == np.int64, "Block_id column is missing"
+=======
+def test_stochatreat_output_idx_col(treatments_df):
+    """Tests that the function's output contains the `idx_col`'"""
+<<<<<<< HEAD
+    assert "idx_col" in treatments_df.columns, "Index column is missing"
+>>>>>>> a60e8d4... merge
 
+=======
+    treatments = get_treatments_to_check_output
+    assert "id" in treatments.columns, "Index column is missing"
+    
+
+def test_stochatreat_output_format_size(get_treatments_to_check_output):
+    """Tests that the function's output is of the right length'"""
+    treatments = get_treatments_to_check_output
+    assert len(treatments) == 90, "The size of the output does not match the sampled size"
+    
+>>>>>>> e8d0894... corrected tests, and move the sorting after all necessary checks have been conducted
 
 def test_stochatreat_output_idx_col(treatments_dict):
     """Tests that the function's output's 'idx_col` column is the same type as the input'"""

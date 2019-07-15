@@ -113,7 +113,7 @@ def stochatreat(data: pd.DataFrame,
 
     # sort data
     data = data.sort_values(by=idx_col)
-
+    
     # combine cluster cells
     data = data[[idx_col] + block_cols].copy()
     data['block'] = data[block_cols].astype(str).sum(axis=1)
