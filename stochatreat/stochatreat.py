@@ -85,30 +85,30 @@ def stochatreat(data: pd.DataFrame,
         probs = np.array([frac] * len(ts))
     elif probs != [None]:
         probs = np.array(probs)
-        assertmsg = "the probabilities must add up to 1"
+        assertmsg = 'the probabilities must add up to 1'
         assert probs.sum() == 1, assertmsg
 
-    assertmsg = "length of treatments and probs must be the same"
+    assertmsg = 'length of treatments and probs must be the same'
     assert len(ts) == len(probs), assertmsg
 
     # check length of data
     if len(data) < 1:
-        raise ValueError("Make sure your data has enough observations.")
+        raise ValueError('Make sure your data has enough observations.')
 
     # if idx_col parameter was not defined.
     if idx_col is None:
         data = data.reset_index(drop=True)
-        idx_col = "index"
+        idx_col = 'index'
     elif type(idx_col) is not str:
-        raise TypeError("idx_col has to be a string.")
+        raise TypeError('idx_col has to be a string.')
 
     # if size is larger than sample universe
     if size is not None and size > len(data):
-        raise ValueError("Size argument is larger than the sample universe.")
+        raise ValueError('Size argument is larger than the sample universe.')
 
     # check for unique identifiers
     if data[idx_col].duplicated(keep=False).sum() > 0:
-        raise ValueError("Values in idx_col are not unique.")
+        raise ValueError('Values in idx_col are not unique.')
 
     # deal with multiple clusters
     if type(block_cols) is str:
@@ -141,7 +141,7 @@ def stochatreat(data: pd.DataFrame,
         data = pd.concat(sample)
 
         assert sum(reduced_sizes) == len(data)
-
+s
     # keep only ids and concatenated clusters
     data = data[[idx_col] + ['block']]
 
@@ -151,7 +151,6 @@ def stochatreat(data: pd.DataFrame,
     
     slizes = []
     for i, cluster in enumerate(blocks):
-<<<<<<< HEAD
         new_slize = []
         # slize data by cluster
         slize = data.loc[data['block'] == cluster].copy()
@@ -219,53 +218,6 @@ def stochatreat(data: pd.DataFrame,
 
         # append blocks together
         slizes.append(new_slize)
-=======
-        slize = data.loc[data["block"] == cluster].copy()
-        # if size not None we sample
-        if size is not None:
-            slize = slize.sample(n=reduced_sizes[i],
-                                replace=False,
-                                random_state=random_state)
-        # we generate random assignments of fixed proportions
-        n_cluster = len(slize)
-
-        treatment_sizes = np.round(n_cluster*probs).astype(int)
-
-        # if some treatments are cancelled out because of small clusters
-        # or small probabilites
-        if(min(treatment_sizes) == 0):
-            # FIXME: log warning here? that fixed proportions cannot be met, so
-            # randomized so that there is no systematic exclusion of a treatment
-            cluster_treatments = np.random.choice(treats, size=n_cluster, p=probs)
-        else:
-            # we use np.round to get as close to the required proportions
-            # as possible
-            cluster_treatments = np.repeat(
-                ts, treatment_sizes
-            )
-
-            # we randomly add/remove treatments to fill the gaps/remove the excess
-            n_cluster_treatments = len(cluster_treatments)
-            n_misfits = n_cluster - n_cluster_treatments
-            if n_misfits > 0:
-                cluster_treatments = np.r_[
-                    cluster_treatments, 
-                    np.random.choice(treats, size=n_misfits, p=probs)
-                ]   
-            # we remove uniformly randomly following the existing proportion
-            if n_misfits < 0:
-                random_misfit_idx = np.random.choice(
-                    n_cluster_treatments, size=abs(n_misfits), replace=False
-                )
-                cluster_treatments = np.delete(cluster_treatments, random_misfit_idx)
-
-            # we shuffle for random assignments within strata
-            np.random.shuffle(cluster_treatments)
-
-        slize["treat"] = cluster_treatments
-
-        slizes.append(slize)
->>>>>>> dealt with small cluster/probability to keep all treatments in the data
 
     # concatenate all blocks together
     ids_treats = pd.concat(slizes, sort=False)
@@ -273,12 +225,12 @@ def stochatreat(data: pd.DataFrame,
     ids_treats = ids_treats.sort_values(by=idx_col)
     # map the concatenated blocks to block ids to retrieve the blocks
     # within which randomization was done easily
-    ids_treats["block_id"] = ids_treats.groupby(["block"]).ngroup()
-    ids_treats = ids_treats.drop(columns="block")
+    ids_treats['block_id'] = ids_treats.groupby(['block']).ngroup()
+    ids_treats = ids_treats.drop(columns='block')
     # reset index
     ids_treats = ids_treats.reset_index(drop=True)
-    ids_treats["treat"] = ids_treats["treat"].astype(np.int64)
+    ids_treats['treat'] = ids_treats['treat'].astype(np.int64)
 
     assert len(ids_treats) == len(data)
-    assert ids_treats["treat"].isnull().sum() == 0
+    assert ids_treats['treat'].isnull().sum() == 0
     return ids_treats
