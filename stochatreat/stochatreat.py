@@ -151,6 +151,7 @@ def stochatreat(data: pd.DataFrame,
     
     slizes = []
     for i, cluster in enumerate(blocks):
+<<<<<<< HEAD
         new_slize = []
         # slize data by cluster
         slize = data.loc[data['block'] == cluster].copy()
@@ -218,6 +219,53 @@ def stochatreat(data: pd.DataFrame,
 
         # append blocks together
         slizes.append(new_slize)
+=======
+        slize = data.loc[data["block"] == cluster].copy()
+        # if size not None we sample
+        if size is not None:
+            slize = slize.sample(n=reduced_sizes[i],
+                                replace=False,
+                                random_state=random_state)
+        # we generate random assignments of fixed proportions
+        n_cluster = len(slize)
+
+        treatment_sizes = np.round(n_cluster*probs).astype(int)
+
+        # if some treatments are cancelled out because of small clusters
+        # or small probabilites
+        if(min(treatment_sizes) == 0):
+            # FIXME: log warning here? that fixed proportions cannot be met, so
+            # randomized so that there is no systematic exclusion of a treatment
+            cluster_treatments = np.random.choice(treats, size=n_cluster, p=probs)
+        else:
+            # we use np.round to get as close to the required proportions
+            # as possible
+            cluster_treatments = np.repeat(
+                ts, treatment_sizes
+            )
+
+            # we randomly add/remove treatments to fill the gaps/remove the excess
+            n_cluster_treatments = len(cluster_treatments)
+            n_misfits = n_cluster - n_cluster_treatments
+            if n_misfits > 0:
+                cluster_treatments = np.r_[
+                    cluster_treatments, 
+                    np.random.choice(treats, size=n_misfits, p=probs)
+                ]   
+            # we remove uniformly randomly following the existing proportion
+            if n_misfits < 0:
+                random_misfit_idx = np.random.choice(
+                    n_cluster_treatments, size=abs(n_misfits), replace=False
+                )
+                cluster_treatments = np.delete(cluster_treatments, random_misfit_idx)
+
+            # we shuffle for random assignments within strata
+            np.random.shuffle(cluster_treatments)
+
+        slize["treat"] = cluster_treatments
+
+        slizes.append(slize)
+>>>>>>> dealt with small cluster/probability to keep all treatments in the data
 
     # concatenate all blocks together
     ids_treats = pd.concat(slizes, sort=False)
