@@ -68,7 +68,6 @@ def stochatreat(data: pd.DataFrame,
                                  random_state=42)
         >>> data = data.merge(treats, how='left', on='myid')
     """
-    R = np.random.RandomState(random_state)
 
     # =========================================================================
     # do checks
@@ -175,7 +174,7 @@ def stochatreat(data: pd.DataFrame,
             )
         
         # concatenate assignments and shuffle them for a random assignment
-        # need to cast as int because concatenatation with empty array casts to float
+        # need to cast as int because concatenation with empty array casts to float
         cluster_treatments = np.r_[
             first_round_cluster_treatments, second_round_cluster_treatments
         ].astype(int)
