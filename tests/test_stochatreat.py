@@ -257,11 +257,7 @@ def test_stochatreat_no_misfits(probs):
 @pytest.mark.parametrize("probs", standard_probs)
 def test_stochatreat_only_misfits(probs):
     """Test that overall treatment assignment proportions across all strata are as intended when strata are such that there are only misfits"""
-<<<<<<< HEAD
     N = 1_000
-=======
-    N = 400_000
->>>>>>> dealt with small cluster/probability to keep all treatments in the data
     df = pd.DataFrame(
         data={
             "id": np.arange(N),
