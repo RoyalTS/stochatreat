@@ -11,9 +11,6 @@ Created on Thu Nov  8 14:34:47 2018
 """
 from typing import List
 
-from functools import reduce
-from operator import iconcat
-
 import numpy as np
 import pandas as pd
 
@@ -71,6 +68,7 @@ def stochatreat(data: pd.DataFrame,
                                  random_state=42)
         >>> data = data.merge(treats, how='left', on='myid')
     """
+    R = np.random.RandomState(random_state)
 
     # =========================================================================
     # do checks
@@ -141,7 +139,7 @@ def stochatreat(data: pd.DataFrame,
         data = pd.concat(sample)
 
         assert sum(reduced_sizes) == len(data)
-s
+
     # keep only ids and concatenated clusters
     data = data[[idx_col] + ['block']]
 
@@ -164,10 +162,8 @@ s
         n_misfit = int(block_size - n_belong)
 
         # to avoid bias towards the first treatment
-        rand_indices = list(range(treats))
-        np.random.shuffle(rand_indices)
-        treat_blocks = treat_blocks[rand_indices]
-        ts = np.array(ts)[rand_indices]
+        np.random.shuffle(ts)
+        treat_blocks = treat_blocks[ts]
 
         # generate indexes to slice
         locs = treat_blocks.cumsum()
