@@ -149,72 +149,41 @@ def stochatreat(data: pd.DataFrame,
     
     slizes = []
     for i, cluster in enumerate(blocks):
-        new_slize = []
+
         # slize data by cluster
         slize = data.loc[data['block'] == cluster].copy()
         # get the block size
         block_size = slize.shape[0]
 
-        # get the number of "adherents"
+        # first round of assignment of treatments 
         treat_blocks = np.floor(block_size * probs)
-        n_belong = int(treat_blocks.sum())
-        # get the number of misfits
-        n_misfit = int(block_size - n_belong)
-        # to avoid bias towards the first treatment
-        np.random.shuffle(ts)
-        treat_blocks = treat_blocks[ts]
+        first_round_cluster_treatments = np.repeat(ts, treat_blocks.astype(int))
 
-        # generate indexes to slice
-        locs = treat_blocks.cumsum()
+        # get the number of units to assign in the second round ("misfits")
+        n_misfit = int(block_size - len(first_round_cluster_treatments))
 
-        # separate adherents from misfits
-        adherents = slize.iloc[:n_belong].copy()
-        misfits = slize.iloc[n_belong:].copy()
-
-        new_slize = []
-
-        # deal with adherents
-
-        if n_belong > 0:
-            # assign random values
-            adherents['rand'] = R.uniform(size=n_belong)
-            # sort by random
-            adherents = adherents.sort_values(by='rand')
-            # drop the rand column
-            adherents = adherents.drop(columns='rand')
-            # reset index in order to keep original id
-            adherents = adherents.reset_index(drop=True)
-            # assign treatment by index
-            for i, treat in enumerate(ts):
-                if i == 0:
-                    adherents.loc[:locs[i], 'treat'] = treat
-                else:
-                    adherents.loc[locs[i - 1]:locs[i], 'treat'] = treat
-            
-            new_slize.append(adherents)
-
-        # if there are any misfits
+        # if there are any misfits, start second round of assignment
+        second_round_cluster_treatments = np.array([])
         if n_misfit > 0:
-            # assign random values
-            misfits['rand'] = R.uniform(size=n_misfit)
-            # sort by random
-            misfits = misfits.sort_values(by='rand')
-            # drop the rand column
-            misfits = misfits.drop(columns='rand')
-            # reset index in order to keep original id
-            misfits = misfits.reset_index(drop=True)
             # assign probabilites to get the right proportion expectation
             # making sure we shuffle the probs like the treat_blocks
-            misfit_probs = probs[ts] - treat_blocks / block_size
+            misfit_probs = probs - treat_blocks / block_size
             # probas should sum to 1
             misfit_probs = misfit_probs / misfit_probs.sum()
-            misfits['treat'] = np.random.choice(ts, size=n_misfit, p=misfit_probs)
-            
-            new_slize.append(misfits)
+            second_round_cluster_treatments = np.random.choice(
+                ts, size=n_misfit, p=misfit_probs
+            )
+        
+        # concatenate assignments and shuffle them for a random assignment
+        # need to cast as int because concatenatation with empty array casts to float
+        cluster_treatments = np.r_[
+            first_round_cluster_treatments, second_round_cluster_treatments
+        ].astype(int)
+        np.random.shuffle(cluster_treatments)
 
-        new_slize = pd.concat(new_slize)
-        # append blocks together
-        slizes.append(new_slize)
+        slize['treat'] = cluster_treatments
+
+        slizes.append(slize)
 
     # concatenate all blocks together
     ids_treats = pd.concat(slizes, sort=False)
