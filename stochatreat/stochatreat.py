@@ -144,7 +144,7 @@ def stochatreat(data: pd.DataFrame,
     data = data[[idx_col] + ['block']]
 
     # =========================================================================
-    # sample and assign treatments
+    # assign treatments
     # =========================================================================
     
     slizes = []
