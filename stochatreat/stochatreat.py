@@ -211,9 +211,12 @@ def stochatreat(data: pd.DataFrame,
             new_slize.append(adherents)
 
             # assign misfits
+            # with new probabilities to get the right proportion expectation
+            misfit_probs = probs - treat_blocks / block_size
+            misfit_probs = misfit_probs / misfit_probs.sum()
             misfits['treat'] = R.choice(range(treats),
                                         size=n_misfit,
-                                        p=probs)
+                                        p=misfit_probs)
             new_slize.append(misfits)
             new_slize = pd.concat(new_slize)
 
